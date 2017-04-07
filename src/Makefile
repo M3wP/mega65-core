@@ -262,16 +262,16 @@ tools/pngprepare/pngprepare:	tools/pngprepare/pngprepare.c Makefile
 	gcc -g -Wall -I/usr/local/include -L/usr/local/lib -o tools/pngprepare/pngprepare tools/pngprepare/pngprepare.c -lpng
 
 # ============================ done *deleted*, Makefile-dep, print-warn, clean-target
-# unix command to generate the 'iomap.txt' file that represents the registers
+# unix command to generate the 'iomap.md' file that represents the registers
 # within both the c64 and the c65gs
-# note that the iomap.txt file already comes from github.
-# note that the iomap.txt file is often recreated because version.vhdl is updated.
-../iomap.txt:	$(VHDLSRCDIR)/*.vhdl 
+# note that the iomap.md file is often recreated because version.vhdl is updated.
+../doc/iomap.md:	$(VHDLSRCDIR)/*.vhdl 
 	$(warning =============================================================)
-	$(warning ~~~~~~~~~~~~~~~~> Making: ../iomap.txt)
+	$(warning ~~~~~~~~~~~~~~~~> Making: ../doc/iomap.md)
 	# Force consistent ordering of items according to natural byte values
 	export LC_ALL=C
-	egrep "IO:C6|IO:GS" $(VHDLSRCDIR)/*.vhdl | cut -f3- -d: | sort -u -k2 > ../iomap.txt
+	# match string, cut 3rd chunk after ":", sort, pad with 2x spaces for md-format
+	egrep "IO:C6|IO:GS" $(VHDLSRCDIR)/*.vhdl | cut -f3- -d: | sort -u -k2 | awk '{printf("%s  \n", $$0)}' > ../doc/iomap.md
 
 # ============================ done moved, Makefile-dep, print-warn, clean-target
 # script to extract the git-status from the ./.git filesystem, and to embed that string
@@ -428,7 +428,6 @@ clean:
 	rm -f utilities/ethertest.prg utilities/ethertest.list utilities/ethertest.map
 	rm -f utilities/test01prg.prg utilities/test01prg.list utilities/test01prg.map
 	rm -f utilities/c65test02prg.prg utilities/c65test02prg.list utilities/c65test02prg.map
-	rm -f iomap.txt
 	rm -f utility.d81
 	rm -f tests/test_fdc_equal_flag.prg tests/test_fdc_equal_flag.list tests/test_fdc_equal_flag.map
 	rm -rf $(SDCARD_DIR)

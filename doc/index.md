@@ -7,6 +7,7 @@
 * [using](./using.md) - how to use the architecture when it is running in the fpga  
   * [monitor](./monitor.md) - how to interface with the FPGA using a serial port monitor  
 * [hardware](./hardware.md) - details the interconnectivity of major hardware components  
+* [iomap](./iomap.md) - details of the registers and input/output map (auto generated)  
 * [structural](./structural.md) - vhdl/fpga firmware diagrams and descriptions  
 * [kickup](./kickup.md) - firmware description and boot code  
   * [fat32](./fat32.md) - implementation of fat32 file system  

@@ -13,6 +13,7 @@ src/diskmenu_c000.bin
 src/tests/*.prg
 src/tools/*.prg
 src/utilities/*.prg
+doc/iomap.md
 
 # ophis
 src/*.list
