@@ -12,9 +12,12 @@
 * [kickup](./kickup.md) - firmware description and boot code  
   * [fat32](./fat32.md) - implementation of fat32 file system  
 * [viciv](./viciv-modes.md) - information on the viciv (VIC-4) video chip (unsure if this is accurate)  
+* [65GS02-instructions](./65GS02-instructions.txt) - lists the opcodes for the GS6502  
+* [65GS-memory_map](./65GS_memory_map.txt) - memory map of the 65GS  
 * [User Manual](./usermanual0.md) - user manual sourced from  
 https://docs.google.com/document/d/1fmEUg6hDdWRb2tFZ3n4LG7S1mNP04_SUAW5DrE8zRpk/edit  
 accessed 10-AUG-2016, now maintained here.  
+* [C64-internals](./cpu_internals.txt) - doco on the internals of the C64 from the VICETEAM  
 * [xemu](./xemu.md) - emulator for the mega65, how to compile and use  
 * [test](./test.md) - test procedure to verify the behaviour of the design  
 
