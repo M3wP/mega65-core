@@ -53,7 +53,10 @@ entity c65uart is
     potb_y : in unsigned(7 downto 0);    
     pot_via_iec : buffer std_logic := '0';
     mouse_debug : in unsigned(7 downto 0);
-    amiga_mouse_enable : out std_logic;
+    amiga_mouse_enable_a : out std_logic;
+    amiga_mouse_enable_b : out std_logic;
+    amiga_mouse_assume_a : out std_logic;
+    amiga_mouse_assume_b : out std_logic;
     
     porte : inout std_logic_vector(7 downto 0);
     portf : inout std_logic_vector(7 downto 0);
@@ -68,7 +71,11 @@ entity c65uart is
     portm_out : out  std_logic_vector(7 downto 0);
     portn_out : out unsigned(7 downto 0);
     porto_out : out unsigned(7 downto 0);
-    portp_out : out unsigned(7 downto 0)
+    portp_out : out unsigned(7 downto 0);
+
+    suppress_key_glitches : out std_logic := '1';
+    suppress_key_retrigger : out std_logic := '0';
+    ascii_key_event_count : in unsigned(15 downto 0)
     
     );
 end c65uart;
@@ -183,7 +190,10 @@ architecture behavioural of c65uart is
 
   signal joya_rotate_internal : std_logic := '0';
   signal joyb_rotate_internal : std_logic := '0';
-  signal amiga_mouse_enable_internal : std_logic := '0';
+  signal amiga_mouse_enable_a_internal : std_logic := '0';
+  signal amiga_mouse_enable_b_internal : std_logic := '0';
+  signal amiga_mouse_assume_a_internal : std_logic := '0';
+  signal amiga_mouse_assume_b_internal : std_logic := '0';
   
 begin  -- behavioural
   
@@ -341,9 +351,22 @@ begin  -- behavioural
           when x"1A" =>
             portp_internal <= std_logic_vector(fastio_wdata);
           when x"1b" =>
-            -- @IO:GS $D61B.0 WRITE enable/disable Amiga mouse support (1351 emulation)
-            amiga_mouse_enable_internal <= fastio_wdata(0);
-            amiga_mouse_enable <= fastio_wdata(0);
+            -- @IO:GS $D61B.0 WRITEONLY enable/disable Amiga mouse support (1351 emulation) on jostick 1
+            amiga_mouse_enable_a_internal <= fastio_wdata(0);
+            amiga_mouse_enable_a <= fastio_wdata(0);
+            -- @IO:GS $D61B.1 WRITEONLY enable/disable Amiga mouse support (1351 emulation) on jostick 2
+            amiga_mouse_enable_b_internal <= fastio_wdata(1);
+            amiga_mouse_enable_b <= fastio_wdata(1);
+            -- @IO:GS $D61B.2 WRITEONLY assume amiga mouse on jostick 1 if enabled
+            amiga_mouse_assume_a_internal <= fastio_wdata(2);
+            amiga_mouse_assume_a <= fastio_wdata(2);
+            -- @IO:GS $D61B.3 WRITEONLY assume amiga mouse on jostick 2 if enabled
+            amiga_mouse_assume_b_internal <= fastio_wdata(3);
+            amiga_mouse_assume_b <= fastio_wdata(3);
+            -- @IO:GS $D61B.6 WRITEONLY DEBUG disable ASCII key retrigger suppression
+            suppress_key_retrigger <= not fastio_wdata(6);
+            -- @IO:GS $D61B.7 WRITEONLY DEBUG disable ASCII key glitch suppression
+            suppress_key_glitches <= not fastio_wdata(7);
           when others => null;
         end case;
       end if;
@@ -483,6 +506,15 @@ begin  -- behavioural
           -- @IO:GS $D621 Read Port A paddle Y
           -- @IO:GS $D622 Read Port B paddle X
           -- @IO:GS $D623 Read Port B paddle Y          
+        when x"1c" =>
+          -- @IO:GS $D61C DEBUG DUPLICATE Last key press as ASCII (hardware accelerated keyboard scanner). Write to clear event ready for next.
+          fastio_rdata(7 downto 0) <= unsigned(porth);
+        when x"1d" =>
+          -- @IO:GS $D61D DEBUG ASCII key event counter LSB
+          -- @IO:GS $D61E DEBUG ASCII key event counter LSB
+          fastio_rdata(7 downto 0) <= ascii_key_event_count(7 downto 0);
+        when x"1e" =>
+          fastio_rdata(7 downto 0) <= ascii_key_event_count(7 downto 0);
         when x"20" => fastio_rdata <= pota_x;
         when x"21" => fastio_rdata <= pota_y;
         when x"22" => fastio_rdata <= potb_x;

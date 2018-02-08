@@ -38,6 +38,10 @@ entity iomapper is
         uart_monitor_char : out unsigned(7 downto 0);
         uart_monitor_char_valid : out std_logic := '0';
 
+        buffereduart_rx : in std_logic;
+        buffereduart_tx : out std_logic := '1';
+        buffereduart_ringindicate : in std_logic;
+        
         display_shift_out : out std_logic_vector(2 downto 0) := "000";
         shift_ready_out : out std_logic := '0';
         shift_ack_in : in std_logic;        
@@ -104,7 +108,10 @@ entity iomapper is
         pot_via_iec : buffer std_logic;
         
         mouse_debug : in unsigned(7 downto 0);
-        amiga_mouse_enable : out std_logic;
+        amiga_mouse_enable_a : out std_logic;
+        amiga_mouse_enable_b : out std_logic;
+        amiga_mouse_assume_a : out std_logic;
+        amiga_mouse_assume_b : out std_logic;
         
         ----------------------------------------------------------------------
         -- CBM floppy serial port
@@ -285,6 +292,7 @@ architecture behavioral of iomapper is
   signal c65uart_cs : std_logic := '0';
   signal sdcardio_cs : std_logic := '0';
   signal f011_cs : std_logic := '0';
+  signal buffereduart_cs : std_logic := '0';
   signal cpuregs_cs : std_logic := '0';
   signal thumbnail_cs : std_logic := '0';
   signal ethernet_cs : std_logic := '0';
@@ -343,6 +351,10 @@ architecture behavioral of iomapper is
   signal iec_atn_fromcia : std_logic := '1';
   signal iec_clk_fromcia : std_logic := '1';
   signal iec_data_fromcia : std_logic := '1';
+
+  signal suppress_key_glitches : std_logic;
+  signal suppress_key_retrigger : std_logic;
+  signal ascii_key_event_count : unsigned(15 downto 0) := x"0000";
   
 begin
 
@@ -491,6 +503,11 @@ begin
       joyreal_disable => joyreal_disable,
       virtual_disable => virtual_disable,
       physkey_disable => physkey_disable,
+      suppress_key_glitches => suppress_key_glitches,
+      suppress_key_retrigger => suppress_key_retrigger,
+      ascii_key_event_count(13 downto 0) => ascii_key_event_count(13 downto 0),
+      ascii_key_event_count(15) => ascii_key_next,
+      ascii_key_event_count(14) => reset_high,
       key_left => key_left,
       key_up => key_up,
       uart_rx => uart_rx,
@@ -500,7 +517,7 @@ begin
       porth_write_strobe => ascii_key_next,
       porti => std_logic_vector(bucky_key(7 downto 0)),
       portj_out => matrix_segment_num,
-      portj_in => std_logic_vector(cart_access_count),
+      portj_in => std_logic_vector(matrix_segment_out),
       portk_out(6 downto 0) => virtual_key1(6 downto 0),
       portk_out(7) => visual_keyboard_enable,
       portl_out(6 downto 0) => virtual_key2(6 downto 0),
@@ -513,8 +530,10 @@ begin
       joya_rotate => joya_rotate,
       joyb_rotate => joyb_rotate,
       mouse_debug => mouse_debug,
-      amiga_mouse_enable => amiga_mouse_enable,
-
+      amiga_mouse_enable_a => amiga_mouse_enable_a,
+      amiga_mouse_enable_b => amiga_mouse_enable_b,
+      amiga_mouse_assume_a => amiga_mouse_assume_a,
+      amiga_mouse_assume_b => amiga_mouse_assume_b,
       pot_via_iec => pot_via_iec,
       pot_drain => pot_drain,
       cia1portb_out => cia1portb_out(7 downto 6),
@@ -538,6 +557,8 @@ begin
 
       matrix_segment_num => matrix_segment_num,
       matrix_segment_out => matrix_segment_out,
+      suppress_key_glitches => suppress_key_glitches,
+      suppress_key_retrigger => suppress_key_retrigger,
 
       scan_mode => keyboard_scan_mode,
       scan_rate => keyboard_scan_rate,
@@ -695,6 +716,28 @@ begin
     fastio_wdata => unsigned(data_i)
     );
   
+  buffered_uart0 : entity work.buffereduart port map (
+    clock50mhz => clock50mhz,
+    clock200 => clock200,
+    clock => clk,
+    reset => reset,
+    irq => irq,
+    buffereduart_cs => buffereduart_cs,
+
+    ---------------------------------------------------------------------------
+    -- IO lines to the buffered UART
+    ---------------------------------------------------------------------------
+    uart_rx => buffereduart_rx,
+    uart_tx => buffereduart_tx,
+    uart_ringindicate => buffereduart_ringindicate,
+
+    fastio_addr => unsigned(address),
+    fastio_write => w,
+    fastio_read => r,
+    std_logic_vector(fastio_rdata) => data_o,
+    fastio_wdata => unsigned(data_i)
+    );
+
   sdcard0 : entity work.sdcardio port map (
     pixelclk => pixelclk,
     clock => clk,
@@ -930,6 +973,11 @@ begin
           ascii_key_presenting <= '0';
           ascii_key_buffered <= x"00";
         end if;
+        if ascii_key_event_count /= x"FFFF" then
+          ascii_key_event_count <= ascii_key_event_count + 1;
+        else
+          ascii_key_event_count <= x"0000";
+        end if;
       end if;
       
     end if;
@@ -1048,6 +1096,15 @@ begin
         when x"D308" => f011_cs <= sdcardio_en;
         when others => f011_cs <= '0';
       end case;
+
+      -- Buffered UART registers at $D0Ex
+      temp(15 downto 0) := unsigned(address(19 downto 4));
+      case temp(15 downto 0) is
+        when x"D10E" => buffereduart_cs <= sdcardio_en;
+        when x"D20E" => buffereduart_cs <= sdcardio_en;
+        when x"D30E" => buffereduart_cs <= sdcardio_en;
+        when others => buffereduart_cs <= '0';
+      end case;
             
       -- CPU uses $FFD{0,1,2,3}700 for DMAgic and other CPU-hosted IO registers.
       -- XXX is resolved in CPU
@@ -1064,7 +1121,7 @@ begin
       -- being mapped in $DC00-$DFFF using the C65 2K colour ram register
       cia1cs <='0';
       cia2cs <='0';
-      if colourram_at_dc00='0' and sector_buffer_mapped_read='0' then
+      if colourram_at_dc00='0' then
         case address(19 downto 8) is
           when x"D0C" => cia1cs <=cia1cs_en;
           when x"D1C" => cia1cs <=cia1cs_en;

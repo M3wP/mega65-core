@@ -73,6 +73,10 @@ entity machine is
          flopled : out std_logic;
          flopmotor : out std_logic;
 
+         buffereduart_rx : in std_logic;
+         buffereduart_tx : out std_logic := '1';
+         buffereduart_ringindicate : in std_logic;
+         
          slow_access_request_toggle : out std_logic;
          slow_access_ready_toggle : in std_logic := '0';
          slow_access_write : out std_logic := '0';
@@ -88,6 +92,10 @@ entity machine is
          ----------------------------------------------------------------------
          vsync : out  STD_LOGIC;
          hsync : out  STD_LOGIC;
+         lcd_hsync : out std_logic;
+         lcd_vsync : out std_logic;
+         lcd_display_enable : out std_logic;
+         lcd_pixel_strobe : out std_logic;
          vgared : out  UNSIGNED (7 downto 0);
          vgagreen : out  UNSIGNED (7 downto 0);
          vgablue : out  UNSIGNED (7 downto 0);
@@ -452,7 +460,10 @@ architecture Behavioral of machine is
   signal potb_y : unsigned(7 downto 0);
   
   signal mouse_debug : unsigned(7 downto 0);
-  signal amiga_mouse_enable : std_logic;
+  signal amiga_mouse_enable_a : std_logic;
+  signal amiga_mouse_enable_b : std_logic;
+  signal amiga_mouse_assume_a : std_logic;
+  signal amiga_mouse_assume_b : std_logic;
 
 begin
 
@@ -771,6 +782,10 @@ begin
       
       vsync           => vsync_drive,
       hsync           => hsync_drive,
+      lcd_vsync => lcd_vsync,
+      lcd_hsync => lcd_hsync,
+      lcd_display_enable => lcd_display_enable,
+      lcd_pixel_strobe => lcd_pixel_strobe,
       vgared          => vgared_sig,
       vgagreen        => vgagreen_sig,
       vgablue         => vgablue_sig,
@@ -817,7 +832,10 @@ begin
       clk => ioclock,
 
       mouse_debug => mouse_debug,
-      amiga_mouse_enable => amiga_mouse_enable,
+      amiga_mouse_enable_a => amiga_mouse_enable_a,
+      amiga_mouse_enable_b => amiga_mouse_enable_b,
+      amiga_mouse_assume_a => amiga_mouse_assume_a,
+      amiga_mouse_assume_b => amiga_mouse_assume_b,
       
       -- These are the 1351 mouse / C64 paddle inputs and drain control
       pot_drain => pot_drain,
@@ -874,6 +892,10 @@ begin
       speed_gate => speed_gate,
       speed_gate_enable => speed_gate_enable,
 
+      buffereduart_rx => buffereduart_rx,
+      buffereduart_tx => buffereduart_tx,
+      buffereduart_ringindicate => buffereduart_ringindicate,
+      
       visual_keyboard_enable => visual_keyboard_enable,
       keyboard_at_top => keyboard_at_top,
       alternate_keyboard => alternate_keyboard,
@@ -987,7 +1009,10 @@ begin
       pot_via_iec => pot_via_iec,
 
       mouse_debug => mouse_debug,
-      amiga_mouse_enable => amiga_mouse_enable,
+      amiga_mouse_enable_a => amiga_mouse_enable_a,
+      amiga_mouse_enable_b => amiga_mouse_enable_b,
+      amiga_mouse_assume_a => amiga_mouse_assume_a,
+      amiga_mouse_assume_b => amiga_mouse_assume_b,
       
       pixel_stream_in => pixel_stream,
       pixel_y => pixel_y,

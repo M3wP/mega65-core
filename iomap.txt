@@ -12,6 +12,7 @@ C65 $0038000-$003BFFF - 8KB C65 BASIC GRAPHICS ROM
 C65 $003C000-$003CFFF - 4KB C65 KERNAL/INTERFACE ROM
 C65 $003E000-$003FFFF - 8KB C65 KERNAL ROM
 GS $4000000 - $7FFFFFF Slow Device memory (64MB)
+GS $7010000.5 - Force assertion of /RESET on cartridge port
 GS $8000000 - $FEFFFFF Slow Device memory (127MB)
 C64 $D000 VIC-II sprite 0 horizontal position
 C64 $D001 VIC-II sprite 1 horizontal position
@@ -81,14 +82,14 @@ C65 $D024.7-0 VIC-III/IV multi-colour 3 (256 colour)
 C64 $D024 VIC-II multi-colour 3
 C64 $D025 VIC-II/III/IV sprite multi-colour 0 (always 256 colour)
 C64 $D026 VIC-II/III/IV sprite multi-colour 1 (always 256 colour)
-C64 $D027 VIC-II sprite 0 colour (always 256 colour)
-C64 $D028 VIC-II sprite 1 colour (always 256 colour)
-C64 $D029 VIC-II sprite 2 colour (always 256 colour)
-C64 $D02A VIC-II sprite 3 colour (always 256 colour)
-C64 $D02B VIC-II sprite 4 colour (always 256 colour)
-C64 $D02C VIC-II sprite 5 colour (always 256 colour)
-C64 $D02D VIC-II sprite 6 colour (always 256 colour)
-C64 $D02E VIC-II sprite 7 colour (always 256 colour)
+C64 $D027 VIC-II sprite 0 colour / 16-colour sprite transparency colour (lower nybl)
+C64 $D028 VIC-II sprite 1 colour / 16-colour sprite transparency colour (lower nybl)
+C64 $D029 VIC-II sprite 2 colour / 16-colour sprite transparency colour (lower nybl)
+C64 $D02A VIC-II sprite 3 colour / 16-colour sprite transparency colour (lower nybl)
+C64 $D02B VIC-II sprite 4 colour / 16-colour sprite transparency colour (lower nybl)
+C64 $D02C VIC-II sprite 5 colour / 16-colour sprite transparency colour (lower nybl)
+C64 $D02D VIC-II sprite 6 colour / 16-colour sprite transparency colour (lower nybl)
+C64 $D02E VIC-II sprite 7 colour / 16-colour sprite transparency colour (lower nybl)
 C65 $D02F VIC-III KEY register for unlocking extended registers.
 GS $D02F Write $47 then $53 to enable C65GS/VIC-IV IO registers
 C65 $D02F Write $A5 then $96 to enable C65/VIC-III IO registers
@@ -180,10 +181,11 @@ GS $D06A VIC-IV character set precise base address (bits 23 - 16)
 GS $D06B VIC-IV sprite 16-colour mode enables
 GS $D06C VIC-IV sprite pointer address (bits 7 - 0)
 GS $D06D VIC-IV sprite pointer address (bits 15 - 8)
-GS $D06E VIC-IV sprite pointer address (bits 23 - 16)
+GS $D06E.0-6 VIC-IV sprite pointer address (bits 22 - 16)
+GS $D06E.7 VIC-IV 16-bit sprite pointer mode (allows sprites to be located on any 64 byte boundary in chip RAM)
 GS $D06F.5-0 VIC-IV first VIC-II raster line
 GS $D06F.7 VIC-IV NTSC emulation mode (max raster = 262)
-GS $D070.1-0 VIC-IV bitmap/text palette bank
+GS $D070.1-0 VIC-IV bitmap/text palette bank (alternate palette)
 GS $D070.3-2 VIC-IV sprite palette bank
 GS $D070.5-4 VIC-IV bitmap/text palette bank
 GS $D070.7-6 VIC-IV palette bank mapped at $D100-$D3FF
@@ -282,8 +284,16 @@ GS $D617 ID of key #3 held down on virtual keyboard
 GS $D618 Keyboard scan rate ($00=50MHz, $FF=~200KHz)
 GS $D619 On-screen keyboard X position (x4 640H pixels)
 GS $D61A On-screen keyboard Y position (x4 physical pixels)
-GS $D61B.0 WRITE enable/disable Amiga mouse support (1351 emulation)
+GS $D61B.0 WRITEONLY enable/disable Amiga mouse support (1351 emulation) on jostick 1
+GS $D61B.1 WRITEONLY enable/disable Amiga mouse support (1351 emulation) on jostick 2
+GS $D61B.2 WRITEONLY assume amiga mouse on jostick 1 if enabled
+GS $D61B.3 WRITEONLY assume amiga mouse on jostick 2 if enabled
+GS $D61B.6 WRITEONLY DEBUG disable ASCII key retrigger suppression
+GS $D61B.7 WRITEONLY DEBUG disable ASCII key glitch suppression
 GS $D61B READ 1351/amiga mouse auto detection DEBUG
+GS $D61C DEBUG DUPLICATE Last key press as ASCII (hardware accelerated keyboard scanner). Write to clear event ready for next.
+GS $D61D DEBUG ASCII key event counter LSB
+GS $D61E DEBUG ASCII key event counter LSB
 GS $D620 Read Port A paddle X
 GS $D621 Read Port A paddle Y
 GS $D622 Read Port B paddle X
@@ -469,6 +479,7 @@ GS $D6E6.7-5 - Ethernet MIIM PHY number (use 0 for Nexys4, 1 for MEGA65 r1 PCBs)
 GS $D6E7 - Ethernet MIIM register value (LSB)
 GS $D6E8 - Ethernet MIIM register value (MSB)
 GS $D6E9-E - Ethernet MAC address
+GS $D6EF - DEBUG show current ethernet RX state
 GS $D6F2 - Read FPGA five-way buttons
 GS $D6F3 - Accelerometer bit-bashing port
 GS $D6F3 Accelerometer inputs
